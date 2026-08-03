@@ -7,7 +7,11 @@
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	// Use this environment variable if you need to bind mount your local source code into a new container.
 	"remoteEnv": {
-		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
+		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}",
+		"POSTGRES_DB": "lead-gen",
+		"POSTGRES_USER": "lead-gen",
+		"POSTGRES_PASSWORD": "lead-gen",
+		"POSTGRES_HOST": "database"
 	},
 	"initializeCommand": "docker build -t tdlib-go:latest -f .infrastructure/tdlib-go/Dockerfile .",
 	"features": {
