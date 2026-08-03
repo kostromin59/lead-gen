@@ -68,15 +68,17 @@ func main() {
 	listener := tdc.Client().GetListener()
 
 	for update := range listener.Updates {
+		log.Printf("new update: %T", update)
 		if update.GetClass() != client.ClassUpdate {
 			continue
 		}
 
 		switch updateByType := update.(type) {
 		case *client.UpdateNewMessage:
-			switch content := updateByType.Message.Content.(type) {
-			case *client.MessageText:
+			log.Printf("content type: %T", updateByType.Message.Content)
 
+			switch updateByType.Message.Content.(type) {
+			case *client.MessageText, *client.MessagePhoto:
 				chat, err := tdc.Client().GetChat(&client.GetChatRequest{
 					ChatId: updateByType.Message.ChatId,
 				})
@@ -105,7 +107,7 @@ func main() {
 				case *client.ChatTypeSupergroup:
 					channelType := chat.Type.(*client.ChatTypeSupergroup)
 					superGroup, err := tdc.Client().GetSupergroupFullInfo(&client.GetSupergroupFullInfoRequest{
-						channelType.SupergroupId,
+						SupergroupId: channelType.SupergroupId,
 					})
 					if err != nil {
 						slog.Error("Ошибка получения супергруппы",
@@ -116,11 +118,7 @@ func main() {
 						description = &superGroup.Description
 					}
 				}
-				// sender := updateByType.Message.SenderId
-				// userID := sender.(*client.MessageSenderUser).UserId
-				// sender, err := tdc.Client().GetUserFullInfo(&client.GetUserFullInfoRequest{
-				// 	// UserId:
-				// })
+
 				var senderID int64
 				var senderName string
 
@@ -153,11 +151,30 @@ func main() {
 					}
 				}
 
+				var text string
+				switch content := updateByType.Message.Content.(type) {
+				case *client.MessageText:
+					text = content.Text.Text
+				case *client.MessagePhoto:
+					text = content.Caption.Text
+				}
+
 				threadID := fmt.Sprintf("%d", updateByType.Message.MessageThreadId)
 
-				log.Println("creating")
+				log.Printf("creating %+v", models.CreateMessage{
+					Content:         text,
+					ChatID:          fmt.Sprintf("%d", chat.Id),
+					ChatName:        chat.Title,
+					ChatDescription: description,
+					MessageID:       fmt.Sprintf("%d", updateByType.Message.Id),
+					ThreadID:        threadID,
+					MessageTime:     time.Unix(int64(updateByType.Message.Date), 0),
+					SenderID:        fmt.Sprintf("%d", senderID),
+					SenderName:      senderName,
+					AccountID:       tdc.ID(),
+				})
 				if err := messagesRepo.Create(context.Background(), models.CreateMessage{
-					Content:         content.Text.Text,
+					Content:         text,
 					ChatID:          fmt.Sprintf("%d", chat.Id),
 					ChatName:        chat.Title,
 					ChatDescription: description,
