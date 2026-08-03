@@ -12,6 +12,8 @@ type Message struct {
 	MessageTime     time.Time
 	ChatName        string
 	ChatDescription *string
+	SenderID        string
+	SenderName      string
 	AccountID       string
 	CreatedAt       time.Time
 	Domain          []string
@@ -28,5 +30,7 @@ type CreateMessage struct {
 	MessageTime     time.Time
 	ChatName        string
 	ChatDescription *string
+	SenderID        string
+	SenderName      string
 	AccountID       string
 }

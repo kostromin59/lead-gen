@@ -40,9 +40,11 @@ func (r *repository) Create(ctx context.Context, dto models.CreateMessage) error
 			message_time,
 			chat_name,
 			chat_description,
+			sender_id,
+			sender_name,
 			account_id
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 		)`,
 		dto.ChatID,
 		dto.MessageID,
@@ -51,6 +53,8 @@ func (r *repository) Create(ctx context.Context, dto models.CreateMessage) error
 		dto.MessageTime,
 		dto.ChatName,
 		dto.ChatDescription,
+		dto.SenderID,
+		dto.SenderName,
 		dto.AccountID,
 	); err != nil {
 		return fmt.Errorf("%s: %w", op, err)

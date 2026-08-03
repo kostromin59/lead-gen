@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS messages (
   message_time TIMESTAMPTZ NOT NULL,
   chat_name VARCHAR(255) NOT NULL,
   chat_description TEXT,
+  sender_id VARCHAR(255) NOT NULL,
+  sender_name VARCHAR(255) NOT NULL,
   account_id VARCHAR(255) NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   domain TEXT[],

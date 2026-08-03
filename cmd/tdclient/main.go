@@ -116,6 +116,42 @@ func main() {
 						description = &superGroup.Description
 					}
 				}
+				// sender := updateByType.Message.SenderId
+				// userID := sender.(*client.MessageSenderUser).UserId
+				// sender, err := tdc.Client().GetUserFullInfo(&client.GetUserFullInfoRequest{
+				// 	// UserId:
+				// })
+				var senderID int64
+				var senderName string
+
+				switch s := updateByType.Message.SenderId.(type) {
+				case *client.MessageSenderUser:
+					senderID = s.UserId
+					user, err := tdc.Client().GetUser(&client.GetUserRequest{
+						UserId: s.UserId,
+					})
+					if err != nil {
+						slog.Error("Ошибка получения пользователя", "error", err, "user_id", s.UserId)
+						senderName = "Unknown User"
+					} else {
+						senderName = user.FirstName
+						if user.LastName != "" {
+							senderName += " " + user.LastName
+						}
+					}
+
+				case *client.MessageSenderChat:
+					senderID = s.ChatId
+					chatInfo, err := tdc.Client().GetChat(&client.GetChatRequest{
+						ChatId: s.ChatId,
+					})
+					if err != nil {
+						slog.Error("Ошибка получения чата-отправителя", "error", err, "chat_id", s.ChatId)
+						senderName = "Unknown Chat"
+					} else {
+						senderName = chatInfo.Title
+					}
+				}
 
 				threadID := fmt.Sprintf("%d", updateByType.Message.MessageThreadId)
 
@@ -128,6 +164,8 @@ func main() {
 					MessageID:       fmt.Sprintf("%d", updateByType.Message.Id),
 					ThreadID:        threadID,
 					MessageTime:     time.Unix(int64(updateByType.Message.Date), 0),
+					SenderID:        fmt.Sprintf("%d", senderID),
+					SenderName:      senderName,
 					AccountID:       tdc.ID(),
 				}); err != nil {
 					slog.Error("unable to create message", slog.String("err", err.Error()))
