@@ -41,6 +41,7 @@ func main() {
 			descr = *msgs[0].ChatDescription
 		}
 
+		// log.Printf("messages: %+v", msgs)
 		log.Println("start handle", msgs[0].ChatName, len(msgs))
 		resp, err := agent.Handle(context.TODO(), msgs[0].ChatName, descr, msgs)
 		if err != nil {
@@ -55,7 +56,7 @@ func main() {
 			log.Printf("updating: %+v", id)
 			messagesRepo.UpdateSemantic(context.TODO(), id, msgs[0].ChatID, tid, s.Domain, s.Entities, s.Intent)
 		}
-		log.Printf("messages: %+v", msgs)
+
 		log.Printf("updating len: %+v", len(resp))
 	}
 }

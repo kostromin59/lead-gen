@@ -23,8 +23,8 @@ type Agent struct {
 
 func New() *Agent {
 	llmModel := completions.New(completions.Config{
-		BaseURL:   "http://192.168.1.100:11434/v1",
-		ModelName: "gemma4:12b-it-q8_0",
+		BaseURL:   "http://192.168.1.100:8910/v1",
+		ModelName: "ggml-org/gemma-4-E4B-it-GGUF:Q8_0",
 	})
 
 	itemSchema := &genai.Schema{
@@ -68,30 +68,27 @@ func New() *Agent {
 	}
 
 	agent, err := llmagent.New(llmagent.Config{
-		Name:         "message-semantic",
-		Model:        llmModel,
+		Name:  "message-semantic",
+		Model: llmModel,
+		// InputSchema:  InputSchema,
 		OutputSchema: schema,
 		GenerateContentConfig: &genai.GenerateContentConfig{
 			ThinkingConfig: &genai.ThinkingConfig{
 				IncludeThoughts: false,
-				ThinkingBudget:  new(int32(0)),
-				ThinkingLevel:   genai.ThinkingLevelLow,
 			},
-			MaxOutputTokens: 64000,
+			MaxOutputTokens: 50000,
 		},
-
 		Description: "Агент, который будет определять теги для сообщений, Domain (предметная область), Entities (детали, конкретика), Intent (намерение)",
-		Instruction: `Ты — агент, что анализирует сообщения из мессенджера.
+		Instruction: `Ты — агент, что анализирует сообщения из мессенджера для поиска лидов.
 		Будут даны некоторое количество сообщений из одного чата.
 		К этим сообщениям будет приложено название чата и его описание для более точного анализа.
 		Твоя цель для каждого сообщения по его ID, содержанию, времени, названию и описанию, чата указать следующие теги: domain (предметная область), entities (детали, конкретика), intent (намерение).
 		В каждом теге может быть несколько значений. Выводы нужно делать на основе всех сообщений (истории), что тебе были переданы для более точного анализа.
 		В domain указывается общая предметная область: развлечения, автомобили, IT, медицина, новости, техника, путешествия и так далее, что отвечают общей предметной области. Я привёл лишь несколько примеров из многих вариантов.
-		В entities указывается конкретика: название города, бренда, марка, место, модель и любые другие, что отвечают деталям. Я привёл лишь несколько примеров из многих вариантов.
+		В entities указывается конкретика: название города, бренда, марка, место, модель, персонаж, технология и любые другие, что отвечают деталям. Я привёл лишь несколько примеров из многих вариантов. Их по возможности лучше писать в оригинале: эппл — Apple, бмв — BMW.
 		В intent указывается намерение: покупка, продажа, вопрос, обсуждение, шутка и любые другие, что позволит определить намерение или характер сообщения. Я привёл лишь несколько примеров из многих вариантов.
 		Необходимо учитывать, что в рамках истории сообщений, может быть несколько разных предметных областей, конкретики и намерений.
 		Запрещается выдумывать любую информацию. Если не знаешь — нужно указать, что пусто. Нужно указать теги для всех сообщений. 
-		Если передано 100 сообщений, то необходимо в ответе указать теги для 100 сообщений (в том числе пустые).
 		Теги по возможности нужно писать на русском языке, если это не название собственное, деталь или конкретика. В message_id всегда подставляй message_id, не выдумывай его. Если значений нет, значит отдавай пустой массив. Нельзя обрезать json.`,
 	})
 	if err != nil {
@@ -122,7 +119,6 @@ func (a *Agent) Handle(ctx context.Context, chatName, chatDescription string, me
 		ThreadID    *string   `json:"thread_id,omitempty"`
 		Content     string    `json:"content"`
 		MessageTime time.Time `json:"message_time"`
-		CreatedAt   time.Time `json:"created_at"`
 	}
 
 	type input struct {
@@ -163,10 +159,19 @@ func (a *Agent) Handle(ctx context.Context, chatName, chatDescription string, me
 	}); err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err := a.session.Delete(ctx, &session.DeleteRequest{
+			AppName:   "message-semantic",
+			UserID:    uid,
+			SessionID: sid,
+		}); err != nil {
+			log.Printf("delete session error: %q", err)
+		}
+	}()
 
 	content := genai.NewContentFromText(string(b), genai.RoleUser)
 	events := a.runner.Run(ctx, uid, sid, content, agent.RunConfig{
-		// StreamingMode: agent.StreamingModeSSE,
+		StreamingMode: agent.StreamingModeNone,
 	})
 	log.Println("events")
 	res := ""
@@ -177,9 +182,19 @@ func (a *Agent) Handle(ctx context.Context, chatName, chatDescription string, me
 			continue
 		}
 
+		if event.ErrorMessage != "" {
+			log.Println(event.ErrorMessage)
+			panic("err")
+		}
+
 		if event.Content == nil {
+			log.Printf("nil content: %+v", event)
 			continue
 		}
+
+		log.Printf("1: %+v", event.LLMResponse.Content)
+		log.Printf("2: %+v", event.Content)
+		log.Printf("3: %+v", *event)
 
 		for _, part := range event.Content.Parts {
 			if part.Thought {

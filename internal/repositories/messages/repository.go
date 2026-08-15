@@ -106,7 +106,7 @@ INNER JOIN random_chat_thread rct
 WHERE m.is_ai_handled = false 
     AND m.content != ''
 ORDER BY m.message_time ASC  -- сортировка по времени
-LIMIT 10
+LIMIT 100
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
