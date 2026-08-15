@@ -19,7 +19,13 @@ type Message struct {
 	Domain          []string
 	Entities        []string
 	Intent          []string
-	IsAiHandled     bool
+	IsAIHandled     bool
+}
+
+type Semantic struct {
+	Domain   []string
+	Entities []string
+	Intent   []string
 }
 
 type CreateMessage struct {
