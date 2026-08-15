@@ -55,6 +55,7 @@ func main() {
 			log.Printf("updating: %+v", id)
 			messagesRepo.UpdateSemantic(context.TODO(), id, msgs[0].ChatID, tid, s.Domain, s.Entities, s.Intent)
 		}
+		log.Printf("messages: %+v", msgs)
 		log.Printf("updating len: %+v", len(resp))
 	}
 }
