@@ -52,9 +52,9 @@ func main() {
 			if msgs[0].ThreadID != nil {
 				tid = *msgs[0].ThreadID
 			}
+			log.Printf("updating: %+v", id)
 			messagesRepo.UpdateSemantic(context.TODO(), id, msgs[0].ChatID, tid, s.Domain, s.Entities, s.Intent)
 		}
-
-		_ = resp
+		log.Printf("updating len: %+v", len(resp))
 	}
 }
