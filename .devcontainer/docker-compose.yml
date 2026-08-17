@@ -35,13 +35,12 @@ services:
     container_name: qdrant
     restart: unless-stopped
     ports:
-      - "6333:6333"  # HTTP API & Web UI
-      - "6334:6334"  # gRPC API (optional, for better performance)
+      - "6333:6333" # HTTP API & Web UI
+      - "6334:6334" # gRPC API (optional, for better performance)
+    networks:
+      - lead-gen-dev
     volumes:
-      - ./qdrant_storage:/qdrant/storage  # Persist vector data and indexes
-    environment:
-      - QDRANT__SERVICE__GRPC_PORT=6334
-      - QDRANT__LOG_LEVEL=INFO
+      - ./qdrant_storage:/qdrant/storage # Persist vector data and indexes
     # Uncomment the next four lines if you will use a ptrace-based debuggers like C++, Go, and Rust.
     # cap_add:
     #  - SYS_PTRACE

@@ -175,3 +175,65 @@ func (r *repository) UpdateSemantic(ctx context.Context, messageID string, chatI
 
 	return nil
 }
+
+func (r *repository) FindHandledByAI(ctx context.Context) ([]models.Message, error) {
+	const op = "repositories.messages.FindHandledByAI"
+
+	rows, err := r.pool.Query(ctx, `
+	
+SELECT 
+    m.chat_id,
+    m.message_id,
+    m.thread_id,
+    m.content,
+    m.message_time,
+    m.chat_name,
+    m.chat_description,
+    m.sender_id,
+    m.sender_name,
+    m.account_id,
+    m.created_at,
+    m.domain,
+    m.entities,
+    m.intent,
+    m.is_ai_handled
+FROM messages m
+WHERE m.is_ai_handled = true 
+    AND m.content != ''
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var messages []models.Message
+	for rows.Next() {
+		var msg models.Message
+		if err := rows.Scan(
+			&msg.ChatID,
+			&msg.MessageID,
+			&msg.ThreadID,
+			&msg.Content,
+			&msg.MessageTime,
+			&msg.ChatName,
+			&msg.ChatDescription,
+			&msg.SenderID,
+			&msg.SenderName,
+			&msg.AccountID,
+			&msg.CreatedAt,
+			&msg.Domain,
+			&msg.Entities,
+			&msg.Intent,
+			&msg.IsAIHandled,
+		); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		messages = append(messages, msg)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return messages, nil
+}
